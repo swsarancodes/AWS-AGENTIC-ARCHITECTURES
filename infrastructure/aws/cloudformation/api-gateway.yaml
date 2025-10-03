@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'API Gateway for Agentic Architectures'
+
+Resources:
+  AgenticApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: agentic-api
+      Description: API Gateway for Agentic Architectures
+
+  AgenticApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: AgenticApiMethod
+    Properties:
+      RestApiId: !Ref AgenticApi
+      StageName: prod
+
+  AgenticApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AgenticApi
+      ParentId: !GetAtt AgenticApi.RootResourceId
+      PathPart: patterns
+
+  AgenticApiMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AgenticApi
+      ResourceId: !Ref AgenticApiResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AgentFunction.Arn}/invocations'

@@ -1,0 +1,252 @@
+version: '3.8'
+
+services:
+  # Main API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-anthropic.claude-3-sonnet-20240229-v1:0}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/agents_db
+      - REDIS_URL=redis://redis:6379/0
+      - VECTOR_DB_URL=http://chroma:8000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=docker
+    depends_on:
+      - postgres
+      - redis
+      - chroma
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: agents_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./infrastructure/docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ChromaDB Vector Store
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    environment:
+      - CHROMA_HOST_PROVIDER=chromadb.config.DefaultHostProvider
+      - CHROMA_HOST_AUTH_PROVIDER=chromadb.auth.providers.ConfigAuthProvider
+      - CHROMA_HOST_AUTH_CONFIG_PROVIDER=chromadb.auth.providers.ConfigAuthConfigProvider
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Streamlit Demo
+  demo:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/demo/Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+    depends_on:
+      - api
+    volumes:
+      - ./examples/demos:/app/demos
+    networks:
+      - agentic-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: infrastructure/docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - demo
+    volumes:
+      - ./infrastructure/docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./infrastructure/docker/nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    networks:
+      - agentic-network
+    restart: unless-stopped
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - agentic-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - agentic-network
+    restart: unless-stopped
+
+  # Jupyter Notebooks (Development)
+  jupyter:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/jupyter/Dockerfile
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=agentic-dev-token
+    volumes:
+      - ./examples/notebooks:/home/jovyan/notebooks
+      - ./patterns:/home/jovyan/patterns
+      - jupyter_data:/home/jovyan/work
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  # Worker Service for Background Tasks
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/worker/Dockerfile
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/agents_db
+      - WORKER_CONCURRENCY=4
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
+  # LocalStack (AWS Services Emulation for Development)
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,lambda,dynamodb,secretsmanager
+      - DEFAULT_REGION=us-east-1
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker-reuse
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - agentic-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  chroma_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jupyter_data:
+    driver: local
+  localstack_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  agentic-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

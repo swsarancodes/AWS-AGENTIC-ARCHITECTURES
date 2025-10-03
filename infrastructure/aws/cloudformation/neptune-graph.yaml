@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Neptune Graph Database for Graph Memory Pattern'
+
+Resources:
+  NeptuneDBSubnetGroup:
+    Type: AWS::Neptune::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for Neptune
+      SubnetIds:
+        - subnet-12345678
+        - subnet-87654321
+
+  NeptuneDBCluster:
+    Type: AWS::Neptune::DBCluster
+    Properties:
+      DBSubnetGroupName: !Ref NeptuneDBSubnetGroup
+      IamAuthEnabled: true
+
+  NeptuneDBInstance:
+    Type: AWS::Neptune::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref NeptuneDBCluster
+      DBInstanceClass: db.r5.large

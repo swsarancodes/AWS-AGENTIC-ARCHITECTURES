@@ -1,0 +1,190 @@
+[project]
+name = "aws-agentic-architectures"
+version = "1.0.0"
+description = "17 production-ready agentic AI patterns built on AWS Bedrock"
+authors = [
+    {name = "AWS Agentic Team", email = "team@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"  # Changed from >=3.9 to >=3.10
+keywords = ["ai", "agents", "aws", "bedrock", "langchain", "patterns"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",  # Removed 3.9
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "boto3>=1.35.0",
+    "langchain-aws>=0.1.17",
+    "langchain>=0.3.0",
+    "langgraph>=0.2.16",
+    "pydantic>=2.9.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=24.4.0",
+    "httpx>=0.27.0",
+    "redis>=5.0.0",
+    "psycopg2-binary>=2.9.0",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "black>=24.8.0",
+    "isort>=5.13.0",
+    "flake8>=7.1.0",
+    "mypy>=1.11.0",
+    "pre-commit>=3.8.0",
+]
+
+notebooks = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.29.0",
+    "notebook>=7.2.0",
+    "plotly>=5.23.0",
+]
+
+demo = [
+    "streamlit>=1.38.0",
+    "altair>=5.4.0",
+    "plotly>=5.23.0",
+]
+
+vector = [
+    "chromadb>=0.5.0",
+    "faiss-cpu>=1.8.0",
+    "sentence-transformers>=3.0.0",
+]
+
+graph = [
+    "networkx>=3.3.0",
+    "rdflib>=7.0.0",
+]
+
+monitoring = [
+    "prometheus-client>=0.20.0",
+    "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
+    "opentelemetry-instrumentation-fastapi>=0.48.0",
+]
+
+aws-cdk = [
+    "aws-cdk-lib>=2.156.0",
+    "constructs>=10.3.0",
+]
+
+all = [
+    "aws-agentic-architectures[dev,notebooks,demo,vector,graph,monitoring,aws-cdk]"
+]
+
+[project.urls]
+Homepage = "https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES"
+Repository = "https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES.git"
+Documentation = "https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES/docs"
+Issues = "https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES/issues"
+
+[project.scripts]
+agentic-cli = "api.main:cli"
+agentic-serve = "api.main:serve"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["patterns*", "api*", "utils*", "evaluation*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']  # Changed from py39
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["patterns", "api", "utils", "evaluation"]
+
+[tool.mypy]
+python_version = "3.10"  # Changed from 3.9
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "boto3.*",
+    "botocore.*",
+    "langchain.*",
+    "langgraph.*",
+    "chromadb.*",
+    "faiss.*",
+    "networkx.*",
+    "rdflib.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+    "slow: marks tests as slow",
+    "aws: marks tests that require AWS credentials",
+]
+
+[tool.coverage.run]
+source = ["patterns", "api", "utils", "evaluation"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "black>=24.8.0",
+    "isort>=5.13.2",
+    "flake8>=7.1.1",
+    "mypy>=1.11.2",
+    "pre-commit>=3.8.0",
+]
