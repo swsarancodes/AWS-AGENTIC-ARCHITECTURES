@@ -3,7 +3,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import os
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    """Simple API key authentication middleware."""
     async def dispatch(self, request: Request, call_next):
         api_key_header = os.getenv("API_KEY_HEADER", "X-API-Key")
         expected_key = os.getenv("API_KEY", "dev-key")
