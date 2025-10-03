@@ -671,75 +671,11 @@ black patterns/ api/ utils/
 flake8 patterns/ api/ utils/
 ```
 
----
-
-## Project Stats
-
-- **Lines of Code**: ~15,000+
-- **Total Files**: 260+
-- **Patterns**: 17
-- **Test Coverage**: 85%+
-- **Documentation Pages**: 10+
-- **Contributors**: Open for contributions!
-
----
-
-## Roadmap
-
-### Version 1.1.0 (Q1 2024)
-- [ ] Additional LLM provider support (OpenAI, Anthropic direct)
-- [ ] Enhanced monitoring dashboards
-- [ ] Pattern composition framework
-- [ ] Visual pattern editor
-
-### Version 1.2.0 (Q2 2024)
-- [ ] Multi-region deployment
-- [ ] Pattern marketplace
-- [ ] Real-time collaboration
-- [ ] Advanced security features
-
-### Version 2.0.0 (Q3 2024)
-- [ ] Distributed execution
-- [ ] Advanced memory systems
-- [ ] Auto-scaling infrastructure
-- [ ] ML-based pattern selection
-
----
-
-## Cost Estimation
-
-### AWS Bedrock (Claude 3 Sonnet)
-- Input: $0.003 per 1K tokens
-- Output: $0.015 per 1K tokens
-- Average cost per request: ~$0.02
-
-### Monthly Estimates (1000 requests/day)
-- AWS Bedrock: ~$600/month
-- Infrastructure: ~$70/month
-- **Total**: ~$670/month
-
----
-
 ## Support
 
 - **Documentation**: [docs/](docs/)
 - **Issues**: [GitHub Issues](https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/swsarancodes/AWS-AGENTIC-ARCHITECTURES/discussions)
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Acknowledgments
-
-- AWS Bedrock team for LLM infrastructure
-- Anthropic for Claude models
-- FastAPI community
-- Open source contributors
 
 ---
 
